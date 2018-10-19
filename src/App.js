@@ -1,20 +1,35 @@
 import React, {Component} from 'react';
-import cx from 'classnames';
 import data from './data';
 import './App.css';
+import {
+  Container,
+  TotalPoints,
+  Panel,
+  Panels,
+  Board,
+  Strikes,
+  Strike,
+  Question,
+  Header,
+  Round,
+  Points,
+  Divider,
+  GlobalStyle,
+} from './components/UI';
 
 const X_KEY = 88;
 const N_KEY = 78;
 const R_KEY = 82;
+const MAX_STRIKES = 3;
 
 class App extends Component {
   state = {
-    round: 0,
+    round: 1,
     strikes: 0,
     team1Points: 0,
     team2Points: 0,
     earnedPoints: 0,
-    flippedCards: [],
+    flippedCards: [1],
   };
 
   componentDidMount() {
@@ -25,12 +40,16 @@ class App extends Component {
         }
 
         this.setState(prev => ({
-          strikes: ++prev.strikes,
+          strikes: ++prev.strikes % (MAX_STRIKES + 1),
         }));
       }
 
-      if (e.which >= 48 && e.which <= 57 && !(document.activeElement instanceof HTMLInputElement)) {
-        const number = Number(String.fromCharCode(e.keyCode))
+      if (
+        e.which >= 48 &&
+        e.which <= 57 &&
+        !(document.activeElement instanceof HTMLInputElement)
+      ) {
+        const number = Number(String.fromCharCode(e.keyCode));
         const {answers} = data[this.state.round];
         const answerIndex = number === 0 ? 10 : number - 1;
 
@@ -61,159 +80,63 @@ class App extends Component {
     });
   }
 
-  componentDidUpdate() {
-    if (this.state.strikes > 3) {
-      this.setState({strikes: 0});
-    }
-  }
-
-  addToTeam1 = e => {
-    e.preventDefault();
-
-    document.getElementById('ff-bankroll').play();
-
-    this.setState(prev => ({
-      team1Points: prev.team1Points + Number(this.team1.value),
-    }));
-  };
-
-  addToTeam2 = e => {
-    e.preventDefault();
-
-    document.getElementById('ff-bankroll').play();
-
-    this.setState(prev => ({
-      team2Points: prev.team2Points + Number(this.team2.value),
-    }));
-  };
-
   render() {
-    const {question, answers} = data[this.state.round];
+    const {question, answers} = data[this.state.round - 1];
 
     return (
-      <div className="App">
-        <div className="App__header">
-          <div className="App__round">
-            Round {this.state.round + 1}
-          </div>
-          <div className="App__strikes">
-            <div
-              className={cx(
-                'App__strike',
-                this.state.strikes >= 1 && 'App__strike--strike'
-              )}
-            >
-              X
-            </div>
-            <div
-              className={cx(
-                'App__strike',
-                this.state.strikes >= 2 && 'App__strike--strike'
-              )}
-            >
-              X
-            </div>
-            <div
-              className={cx(
-                'App__strike',
-                this.state.strikes >= 3 && 'App__strike--strike'
-              )}
-            >
-              X
-            </div>
-          </div>
-        </div>
+      <Container>
+        <GlobalStyle />
+        <Header>
+          <Round>
+            Round {this.state.round}
+            <Points>
+              Team 1: {this.state.team1Points}
+              <Divider />
+              Team 2: {this.state.team2Points}
+            </Points>
+          </Round>
 
-        <div className="App__question">
-          {question}
-        </div>
+          <Question>{question}</Question>
 
-        <div className="App__board">
-          <div className="App__points">
-            {this.state.earnedPoints}
-          </div>
+          <Strikes>
+            {[1, 2, 3].map(totalStrikes => (
+              <Strike
+                key={totalStrikes}
+                red={this.state.strikes >= totalStrikes}
+              >
+                X
+              </Strike>
+            ))}
+          </Strikes>
+        </Header>
 
-          <div className="App__panels">
-            <div className="App__panel1">
-              {answers.slice(0, 5).map((answer, i) =>
-                <div
-                  key={i}
-                  className={cx(
-                    'App__panel',
-                    this.state.flippedCards.includes(i + 1) &&
-                      'App__panel--flipped'
-                  )}
-                >
-                  <div className="App__face App__face--front">
-                    {i + 1}
-                  </div>
-                  <div className="App__face App__face--back">
-                    {answers[i].answer} ({answers[i].points})
-                  </div>
-                </div>
-              )}
-            </div>
+        <Board>
+          <TotalPoints>{this.state.earnedPoints}</TotalPoints>
 
-            <div className="App__panel2">
-              {answers.slice(5, 9).map((answer, i) =>
-                <div
-                  key={i}
-                  className={cx(
-                    'App__panel',
-                    this.state.flippedCards.includes(i + 6) &&
-                      'App__panel--flipped'
-                  )}
-                >
-                  <div className="App__face App__face--front">
-                    {i + 6}
-                  </div>
-                  <div className="App__face App__face--back">
-                    {answers[i + 5].answer} ({answers[i + 5].points})
-                  </div>
-                </div>
-              )}
+          <Panels>
+            {answers.slice(0, 5).map((answer, i) => (
+              <Panel key={i} flipped={this.state.flippedCards.includes(i + 1)}>
+                <Panel.Front>{i + 1}</Panel.Front>
+                <Panel.Back>
+                  <Panel.Answer>{answers[i].answer}</Panel.Answer>
+                  <Panel.Points>{answers[i].points}</Panel.Points>
+                </Panel.Back>
+              </Panel>
+            ))}
 
-              {answers.length >= 10 && (
-                <div
-                  key={10}
-                  className={cx(
-                    'App__panel',
-                    this.state.flippedCards.includes(0) &&
-                    'App__panel--flipped'
-                  )}
-                >
-                  <div className="App__face App__face--front">10</div>
-                  <div className="App__face App__face--back">
-                    {answers[10].answer} ({answers[10].points})
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="App__footer">
-          <div style={{position: 'absolute', bottom: 70, fontSize: 18}}>
-            <form onSubmit={this.addToTeam1}>
-              <label>Team 1:</label>&nbsp;<input type="text" ref={node => this.team1 = node} placeholder="points" />
-            </form>
-            <form onSubmit={this.addToTeam2}>
-              <label>Team 2:</label>&nbsp;<input type="text" ref={node => this.team2 = node} placeholder="points" />
-            </form>
-          </div>
-          <div className="App__team1-points">
-            Team 1: {this.state.team1Points}
-          </div>
-          <div className="App__divider" />
-          <div className="App__team2-points">
-            Team 2: {this.state.team2Points}
-          </div>
-        </div>
+            {answers.slice(5, 10).map((answer, i) => (
+              <Panel key={i} flipped={this.state.flippedCards.includes(i + 6)}>
+                <Panel.Front>{i + 6}</Panel.Front>
+                <Panel.Back>{answers[i + 6].answer}</Panel.Back>
+              </Panel>
+            ))}
+          </Panels>
+        </Board>
 
         <audio src="ff-strike.wav" type="audio/wav" id="ff-strike" />
         <audio src="ff-clang.wav" type="audio/wav" id="ff-clang" />
         <audio src="ff-bankroll.wav" type="audio/wav" id="ff-bankroll" />
-      </div>
+      </Container>
     );
   }
 }
